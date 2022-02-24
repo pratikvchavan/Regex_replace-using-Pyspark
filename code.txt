@@ -1,0 +1,37 @@
+import findspark
+findspark.init()
+
+import pyspark
+from pyspark.context import SparkContext
+from pyspark.sql.session import SparkSession
+
+sc = SparkContext('local')
+spark = SparkSession(sc)
+
+#read csv file
+df=spark.read.csv("dbfs:/FileStore/tables/line_delimeter.txt")
+df.display()
+
+
+#APPLY regexp to replace | in every 5th occurence
+
+from pyspark.sql.functions import regexp_replace,split,explode
+df1=df.withColumn("chk",regexp_replace("_c0","(.*?\\|){5}","$0-"))
+#df1.display()
+df1.select("chk").display()
+
+
+#EXPLODE INTO MULTIPLE RECORD IN SINGLE COLUMN
+
+from pyspark.sql.functions import regexp_replace,split,explode
+df2=df1.withColumn('col_explode',explode(split('chk','\|-'))).select('col_explode').display()
+
+
+#CONVERT DF INTO RDD SPLIT BY "|"
+
+df2.select("col_explode").rdd.map(lambda x: x[0].split("|")).collect()
+
+
+#CONVERT RDD BACK TO DF
+
+row_df.toDF(["name","Degree","year","subject","contact"]).display()
